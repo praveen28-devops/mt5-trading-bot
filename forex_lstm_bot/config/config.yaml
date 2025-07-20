@@ -1,0 +1,124 @@
+# OANDA API Configuration
+oanda:
+  # Get these from your OANDA account
+  api_key: "YOUR_OANDA_API_KEY"  # Replace with your actual API key
+  account_id: "YOUR_ACCOUNT_ID"  # Replace with your actual account ID
+  environment: "practice"  # "practice" for demo, "live" for real trading
+  base_url_practice: "https://api-fxpractice.oanda.com"
+  base_url_live: "https://api-fxtrade.oanda.com"
+  stream_url_practice: "https://stream-fxpractice.oanda.com"
+  stream_url_live: "https://stream-fxtrade.oanda.com"
+
+# Trading Configuration
+trading:
+  # Currency pairs to trade
+  instruments:
+    - "EUR_USD"
+    - "GBP_USD"
+    - "USD_JPY"
+    - "AUD_USD"
+    - "USD_CAD"
+  
+  # Risk Management
+  max_position_size: 10000  # Maximum units per trade
+  max_daily_loss: 500  # Maximum daily loss in account currency
+  max_open_positions: 5  # Maximum number of open positions
+  risk_per_trade: 0.02  # Risk 2% of account per trade
+  
+  # Trading Hours (UTC)
+  trading_hours:
+    start: "07:00"
+    end: "21:00"
+  
+  # Stop Loss and Take Profit
+  default_stop_loss: 50  # pips
+  default_take_profit: 100  # pips
+
+# LSTM Model Configuration
+lstm:
+  # Data preprocessing
+  lookback_period: 60  # Number of previous time steps to use for prediction
+  prediction_horizon: 1  # Number of time steps to predict ahead
+  
+  # Model architecture
+  layers:
+    - units: 50
+      return_sequences: true
+      dropout: 0.2
+    - units: 50
+      return_sequences: true
+      dropout: 0.2
+    - units: 50
+      return_sequences: false
+      dropout: 0.2
+  
+  # Training parameters
+  epochs: 100
+  batch_size: 32
+  validation_split: 0.2
+  early_stopping_patience: 10
+  
+  # Model selection
+  retrain_frequency: 168  # Retrain every week (hours)
+  min_accuracy: 0.55  # Minimum model accuracy to use for trading
+
+# Data Configuration
+data:
+  # Historical data
+  historical_periods:
+    training: "2Y"  # 2 years for training
+    validation: "6M"  # 6 months for validation
+    backtesting: "1Y"  # 1 year for backtesting
+  
+  # Time granularity for OANDA data
+  granularity: "H1"  # Hourly candles (M1, M5, M15, M30, H1, H4, D)
+  
+  # Technical indicators
+  indicators:
+    - "SMA_20"
+    - "SMA_50"
+    - "EMA_12"
+    - "EMA_26"
+    - "RSI_14"
+    - "MACD"
+    - "BB_20"  # Bollinger Bands
+    - "ATR_14"
+    - "STOCH"
+
+# Backtesting Configuration
+backtesting:
+  initial_capital: 10000  # Starting capital for backtesting
+  commission: 0.0002  # Commission per trade (0.02%)
+  slippage: 0.0001  # Slippage per trade (0.01%)
+  
+  # Performance metrics to calculate
+  metrics:
+    - "total_return"
+    - "sharpe_ratio"
+    - "max_drawdown"
+    - "win_rate"
+    - "profit_factor"
+    - "calmar_ratio"
+
+# Logging Configuration
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "{time:YYYY-MM-DD HH:mm:ss} | {level} | {module}:{function}:{line} | {message}"
+  rotation: "1 day"
+  retention: "30 days"
+  file_path: "logs/forex_bot_{time:YYYY-MM-DD}.log"
+
+# Notification Configuration (optional)
+notifications:
+  enabled: false
+  email:
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+    username: "your_email@gmail.com"
+    password: "your_password"
+    recipients:
+      - "trader@example.com"
+  
+  telegram:
+    bot_token: "YOUR_TELEGRAM_BOT_TOKEN"
+    chat_id: "YOUR_CHAT_ID"
