@@ -28,21 +28,89 @@ def calculate_macd(df: pd.DataFrame, slow: int, fast: int, signal: int) -> Tuple
     return macd_indicator.macd(), macd_indicator.macd_signal(), macd_indicator.macd_diff()
 
 
-def generate_trade_signal(df: pd.DataFrame, ema_period: int = 50, rsi_period: int = 14, 
-                          macd_slow: int = 26, macd_fast: int = 12, macd_signal: int = 9) -> pd.DataFrame:
+def generate_trade_signal(df: pd.DataFrame, symbol: str = "EURUSD", params: dict = None) -> dict:
     """Generate trade signals based on EMA, RSI, and MACD"""
-    df = df.copy()
+    if df is None or df.empty:
+        return None
     
-    # Calculate indicators
-    df['ema'] = calculate_ema(df, ema_period)
-    df['rsi'] = calculate_rsi(df, rsi_period)
-    df['macd'], df['macd_signal'], df['macd_diff'] = calculate_macd(df, macd_slow, macd_fast, macd_signal)
-
-    # Generate signals
-    df['buy_signal'] = (df['close'] > df['ema']) & (df['rsi'] < 30) & (df['macd'] > df['macd_signal'])
-    df['sell_signal'] = (df['close'] < df['ema']) & (df['rsi'] > 70) & (df['macd'] < df['macd_signal'])
-
-    return df
+    # Default parameters if not provided
+    if params is None:
+        params = {
+            'ema_period': 50,
+            'rsi_period': 14,
+            'macd_slow': 26,
+            'macd_fast': 12,
+            'macd_signal': 9
+        }
+    
+    df_copy = df.copy()
+    
+    try:
+        # Calculate indicators
+        df_copy['ema'] = calculate_ema(df_copy, params['ema_period'])
+        df_copy['rsi'] = calculate_rsi(df_copy, params['rsi_period'])
+        df_copy['macd'], df_copy['macd_signal'], df_copy['macd_diff'] = calculate_macd(
+            df_copy, params['macd_slow'], params['macd_fast'], params['macd_signal']
+        )
+        
+        # Get the latest values
+        latest = df_copy.iloc[-1]
+        current_price = latest['close']
+        ema_value = latest['ema']
+        rsi_value = latest['rsi']
+        macd_value = latest['macd']
+        macd_signal_value = latest['macd_signal']
+        
+        # Generate signal
+        signal = "HOLD"
+        confidence = 0.0
+        
+        # Buy signal conditions
+        if (current_price > ema_value and 
+            rsi_value < 30 and 
+            macd_value > macd_signal_value):
+            signal = "BUY"
+            confidence = min(0.8, (30 - rsi_value) / 30 + 0.3)
+        
+        # Sell signal conditions
+        elif (current_price < ema_value and 
+              rsi_value > 70 and 
+              macd_value < macd_signal_value):
+            signal = "SELL"
+            confidence = min(0.8, (rsi_value - 70) / 30 + 0.3)
+        
+        # Calculate stop loss and take profit
+        atr = df_copy['high'].rolling(14).max() - df_copy['low'].rolling(14).min()
+        atr_value = atr.iloc[-1] if not atr.empty else 0.001
+        
+        entry_price = current_price
+        stop_loss = 0
+        take_profit = 0
+        
+        if signal == "BUY":
+            stop_loss = entry_price - (atr_value * 2)
+            take_profit = entry_price + (atr_value * 3)
+        elif signal == "SELL":
+            stop_loss = entry_price + (atr_value * 2)
+            take_profit = entry_price - (atr_value * 3)
+        
+        return {
+            'symbol': symbol,
+            'signal': signal,
+            'confidence': confidence,
+            'price': current_price,
+            'entry_price': entry_price,
+            'stop_loss': stop_loss,
+            'take_profit': take_profit,
+            'ema': ema_value,
+            'rsi': rsi_value,
+            'macd': macd_value,
+            'macd_signal': macd_signal_value
+        }
+        
+    except Exception as e:
+        print(f"Error in generate_trade_signal: {e}")
+        return None
 
 
 def optimize_parameters(df: pd.DataFrame = None, trials: int = 100) -> Dict[str, int]:
