@@ -1,0 +1,151 @@
+[build-system]
+requires = ["setuptools >= 46.4.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mt5trade"
+version = "2025.1"
+description = "Free, open source MetaTrader 5 trading bot"
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [
+    {name = "MT5Trade Contributors"},
+]
+keywords = [
+    "algorithmic", "trading", "bot", "metatrader5", "forex", "cryptocurrency"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "MetaTrader5",
+    "pandas",
+    "numpy>=1.20.0",
+    "scikit-learn",
+    "scipy",
+    "python-telegram-bot",
+    "APScheduler",
+    "SQLAlchemy",
+    "python-rapidjson",
+    "py_find_1st",
+    "python-dateutil",
+    "tabulate",
+    "pycoingecko",
+    "py-coinmarketcap",
+    "requests",
+    "urllib3",
+    "wrapt",
+    "jsonschema",
+    "TA-Lib",
+    "technical",
+    "colorama",
+    "questionary",
+    "prompt-toolkit",
+    "ccxt>=4.0.0",
+    "cryptography",
+    "fastapi",
+    "uvicorn[standard]",
+    "pyjwt",
+    "aiofiles",
+    "psutil",
+    "pydantic>=2.2.0",
+    "python-multipart",
+    "jinja2",
+]
+
+[project.optional-dependencies]
+hyperopt = [
+    "hyperopt>=0.6.2",
+    "scikit-optimize>=0.7.0"
+]
+freqai = [
+    "scikit-learn",
+    "joblib>=1.2.0",
+    "catboost; 'arm' not in platform_machine",
+    "lightgbm",
+    "xgboost",
+    "tensorboard",
+]
+plot = [
+    "plotly>=4.0",
+    "plotly_resampler",
+]
+all = [
+    "mt5trade[hyperopt,freqai,plot]"
+]
+
+[project.urls]
+"Bug Tracker" = "https://github.com/mt5trade/mt5trade/issues"
+"Documentation" = "https://www.mt5trade.io"
+"Source Code" = "https://github.com/mt5trade/mt5trade"
+
+[project.scripts]
+mt5trade = "mt5trade.main:main"
+
+[tool.setuptools]
+zip-safe = false
+include-package-data = true
+
+[tool.setuptools.packages.find]
+exclude = [
+    "tests*",
+    "user_data*",
+    "build_helpers*",
+]
+
+[tool.black]
+line-length = 100
+target-version = ['py39']
+exclude = '''
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+    | user_data
+  )/
+)
+'''
+
+[tool.isort]
+line_length = 100
+multi_line_output = 0
+lines_after_imports = 2
+
+[tool.pytest.ini_options]
+addopts = "--verbose --tb=short"
+testpaths = ["tests"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+    "ignore:.*'datetime'.*:FutureWarning:.*",
+]
+
+[tool.coverage.run]
+source = ["mt5trade"]
+omit = [
+    "*/tests/*",
+    "*/user_data/*",
+    "setup.py",
+]
+
+[tool.mypy]
+ignore_missing_imports = true

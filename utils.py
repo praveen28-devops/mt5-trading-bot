@@ -19,31 +19,60 @@ class Logger:
         self.logger = logging.getLogger(name)
         self.logger.setLevel(getattr(logging, level.upper()))
         
-        # Create console handler
+        # Create console handler with UTF-8 encoding
         if not self.logger.handlers:
-            handler = logging.StreamHandler()
+            import sys
+            handler = logging.StreamHandler(sys.stdout)
+            handler.setStream(sys.stdout)
+            
+            # Set encoding to UTF-8 for Windows console
+            if hasattr(handler.stream, 'reconfigure'):
+                handler.stream.reconfigure(encoding='utf-8')
+            
             formatter = logging.Formatter(
                 '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
             )
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
             
-            # Create file handler
-            file_handler = logging.FileHandler('trading_bot.log')
+            # Create file handler with UTF-8 encoding
+            file_handler = logging.FileHandler('trading_bot.log', encoding='utf-8')
             file_handler.setFormatter(formatter)
             self.logger.addHandler(file_handler)
     
+    def _safe_message(self, message: str) -> str:
+        """Ensure message is safe for Windows console"""
+        try:
+            # Try to encode/decode to check if it's safe
+            message.encode('cp1252')
+            return message
+        except UnicodeEncodeError:
+            # If it fails, replace problematic Unicode characters with safe alternatives
+            safe_message = message
+            unicode_replacements = {
+                '🚀': '[ROCKET]',
+                '✅': '[OK]',
+                '❌': '[FAIL]',
+                '⚠️': '[WARN]',
+                '🧪': '[TEST]',
+                '🎉': '[SUCCESS]',
+                '📋': '[LIST]'
+            }
+            for unicode_char, replacement in unicode_replacements.items():
+                safe_message = safe_message.replace(unicode_char, replacement)
+            return safe_message
+    
     def info(self, message: str):
-        self.logger.info(message)
+        self.logger.info(self._safe_message(message))
     
     def warning(self, message: str):
-        self.logger.warning(message)
+        self.logger.warning(self._safe_message(message))
     
     def error(self, message: str):
-        self.logger.error(message)
+        self.logger.error(self._safe_message(message))
     
     def debug(self, message: str):
-        self.logger.debug(message)
+        self.logger.debug(self._safe_message(message))
 
 
 class RiskManager:
