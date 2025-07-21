@@ -67,7 +67,7 @@ def test_live_data_and_signals():
     }
     
     try:
-        df_with_signals = generate_trade_signal(df, **params)
+        df_with_signals = generate_trade_signal(df, symbol, params, for_backtest=True)
         
         # Check recent signals
         recent_signals = df_with_signals.tail(10)

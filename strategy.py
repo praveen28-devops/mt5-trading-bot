@@ -28,10 +28,10 @@ def calculate_macd(df: pd.DataFrame, slow: int, fast: int, signal: int) -> Tuple
     return macd_indicator.macd(), macd_indicator.macd_signal(), macd_indicator.macd_diff()
 
 
-def generate_trade_signal(df: pd.DataFrame, symbol: str = "EURUSD", params: dict = None) -> dict:
+def generate_trade_signal(df: pd.DataFrame, symbol: str = "EURUSD", params: dict = None, for_backtest: bool = False):
     """Generate trade signals based on EMA, RSI, and MACD"""
     if df is None or df.empty:
-        return None
+        return None if not for_backtest else df
     
     # Default parameters if not provided
     if params is None:
@@ -49,33 +49,60 @@ def generate_trade_signal(df: pd.DataFrame, symbol: str = "EURUSD", params: dict
         # Calculate indicators
         df_copy['ema'] = calculate_ema(df_copy, params['ema_period'])
         df_copy['rsi'] = calculate_rsi(df_copy, params['rsi_period'])
-        df_copy['macd'], df_copy['macd_signal'], df_copy['macd_diff'] = calculate_macd(
+        df_copy['macd'], df_copy['macd_signal_col'], df_copy['macd_diff'] = calculate_macd(
             df_copy, params['macd_slow'], params['macd_fast'], params['macd_signal']
         )
         
-        # Get the latest values
+        # Generate signals for each row (for backtesting)
+        df_copy['buy_signal'] = False
+        df_copy['sell_signal'] = False
+        
+        for i in range(len(df_copy)):
+            if i < max(params['ema_period'], params['rsi_period'], params['macd_slow']):
+                continue  # Skip rows without enough data for indicators
+                
+            row = df_copy.iloc[i]
+            current_price = row['close']
+            ema_value = row['ema']
+            rsi_value = row['rsi']
+            macd_value = row['macd']
+            macd_signal_value = row['macd_signal_col']
+            
+            # Buy signal conditions
+            if (current_price > ema_value and 
+                rsi_value < 30 and 
+                macd_value > macd_signal_value):
+                df_copy.iloc[i, df_copy.columns.get_loc('buy_signal')] = True
+            
+            # Sell signal conditions
+            elif (current_price < ema_value and 
+                  rsi_value > 70 and 
+                  macd_value < macd_signal_value):
+                df_copy.iloc[i, df_copy.columns.get_loc('sell_signal')] = True
+        
+        # If this is for backtesting, return the DataFrame with signals
+        if for_backtest:
+            return df_copy
+        
+        # For real-time trading, return the latest signal
         latest = df_copy.iloc[-1]
         current_price = latest['close']
         ema_value = latest['ema']
         rsi_value = latest['rsi']
         macd_value = latest['macd']
-        macd_signal_value = latest['macd_signal']
+        macd_signal_value = latest['macd_signal_col']
         
         # Generate signal
         signal = "HOLD"
         confidence = 0.0
         
         # Buy signal conditions
-        if (current_price > ema_value and 
-            rsi_value < 30 and 
-            macd_value > macd_signal_value):
+        if latest['buy_signal']:
             signal = "BUY"
             confidence = min(0.8, (30 - rsi_value) / 30 + 0.3)
         
         # Sell signal conditions
-        elif (current_price < ema_value and 
-              rsi_value > 70 and 
-              macd_value < macd_signal_value):
+        elif latest['sell_signal']:
             signal = "SELL"
             confidence = min(0.8, (rsi_value - 70) / 30 + 0.3)
         
@@ -110,7 +137,7 @@ def generate_trade_signal(df: pd.DataFrame, symbol: str = "EURUSD", params: dict
         
     except Exception as e:
         print(f"Error in generate_trade_signal: {e}")
-        return None
+        return None if not for_backtest else df
 
 
 def optimize_parameters(df: pd.DataFrame = None, trials: int = 100) -> Dict[str, int]:

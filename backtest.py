@@ -38,7 +38,7 @@ class Backtester:
             return {}
         
         # Generate signals
-        df_with_signals = generate_trade_signal(df, **strategy_params)
+        df_with_signals = generate_trade_signal(df, symbol, strategy_params, for_backtest=True)
         
         # Execute trades based on signals
         self._execute_backtest_trades(df_with_signals, symbol)
